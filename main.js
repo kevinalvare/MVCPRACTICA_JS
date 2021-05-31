@@ -103,3 +103,136 @@
     }
 })();
 
+//Clase para dibujar las vistas del board
+(function(){
+    self.BoardView = function(canvas,board){
+        this.canvas = canvas;
+        this.canvas.width = board.width;
+        this.canvas.height = board.height;
+        this.board = board;
+        this.context = canvas.getContext("2d");
+    }
+
+    self.BoardView.prototype={
+        //limpia para ver el movimiento de la barra
+        clean: function(){
+            this.context.clearRect(0,0,this.board.width, this.board.height);
+        },
+        draw: function(){
+            for (var i = this.board.elements.length -1; i >= 0; i--) {
+                var el = this.board.elements[i];
+
+                draw(this.context,el);
+            };
+        },
+
+        check_collitions: function(){
+            for (var i = this.board.bars.length -1; i >= 0; i--) {
+                var bar = this.board.bars[i];
+                if(hit(bar, this.board.ball))
+                {
+                    this.board.ball.collition(bar);
+                }
+                
+            };
+        },
+        //Metodo para jugar, limpia y dibuja el board
+        play: function(){
+            if(this.board.playing){
+                this.clean();
+                this.draw();
+                this.check_collitions();
+                this.board.ball.move();
+            }            
+        }
+    }
+
+    function hit(a,b){
+        //Revisa si a colisiona con b
+        var hit = false;
+        //Colisiones horizontales
+        if(b.x + b.width >= a.x && b.x < a.x + a.width)
+        {
+            //Colisiones verticales
+            if(b.y + b.height >= a.y && b.y < a.y + a.height)
+            {
+                hit = true;
+            }
+        }
+        //Colision de a con b
+        if(b.x <= a.x && b.x + b.width >= a.x + a.width)
+        {
+            if(b.y <= a.y && b.y + b.height >= a.y + a.height)
+            {
+                hit = true;
+            }
+        }
+        //Colision de b con a
+        if(a.x <= b.x && a.x + a.width >= b.x + b.width)
+        {
+            if(a.y <= b.y && a.y + a.height >= b.y + b.height)
+            {
+                hit = true;
+            }
+        }
+        return hit;
+    }
+
+    //Funcion que dibuja el board
+    function draw(context,element){
+        switch(element.kind){
+            case "rectangle":
+                context.fillRect(element.x,element.y, element.width,element.height);
+                break;
+            case "circle":
+                context.beginPath();
+                context.arc(element.x,element.y,element.radius,0,7);
+                context.fill();
+                context.closePath();
+                break;
+        }             
+    }
+})();
+
+var board = new Board(800,400);
+var bar = new Bar(20,100,20,100,board);
+var bar_2 = new Bar(760,100,20,100,board);
+var canvas = document.getElementById('canvas');
+var board_view = new BoardView(canvas,board);
+var ball = new Ball(300, 100, 10, board);
+
+window.requestAnimationFrame(controller);
+
+//Configuracion para mover la barra
+document.addEventListener("keydown", function(ev){
+    if(ev.keyCode == 87){
+        //W
+        bar.up();
+    }
+    else if(ev.keyCode == 83){
+        //S
+        bar.down();
+    }
+    if(ev.keyCode === 38){
+        //up
+        bar_2.up();
+    }
+    else if(ev.keyCode === 40){
+        //down
+        bar_2.down();
+    }
+    else if(ev.keyCode === 32){
+        ev.preventDefault();
+        board.playing = !board.playing;
+    }
+});
+
+board_view.draw();
+window.requestAnimationFrame(controller);
+
+//Funcion principal para ejecutar todos los elementos
+function controller()
+{
+    board_view.play();
+    window.requestAnimationFrame(controller);
+}//Funcion anonima del primer objeto modelo del Board
